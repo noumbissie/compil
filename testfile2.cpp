@@ -1,4 +1,5 @@
 #include <Rcpp.h>
+//#include <Rcpp11.h>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -6,10 +7,11 @@
 #include <cstdlib>
 #include <ctime>
 #include <sstream>
-#include<iterator>
+#include <iterator>
 #include <vector>
 using namespace Rcpp;
 using namespace std;
+
 
 
 // [[Rcpp::export]]
@@ -20,6 +22,7 @@ SEXP timereadfile(const std::string & filename,bool header) {
   std::string data;
   std::ifstream infile;
   std::string valname;
+  double val;
     
   std::string colNames;
   std::string rowNames;
@@ -48,42 +51,63 @@ SEXP timereadfile(const std::string & filename,bool header) {
                              ,std::istream_iterator<std::string>()
                              
                              );
-  /*get dimension row,size of gene catalogue*/
-  while(!infile.eof()){
-    std::getline(infile,data);
-    
-    nRow++; 
-  }
-  if(header){nRow--;} 
   
   /*creation of colnames of our matrices */
   std::istringstream ss(getColNames) ;
-    StringVector vectorOfColnames(nCol);//vector of colnames
-    
-    for(int i = 0 ;i < nCol ; i ++){
+  StringVector vectorOfColnames(nCol);//vector of colnames
+  StringVector vectorOfRownames;//vector of colnames
+   
+  for(int i = 0 ;i < nCol ; i ++){
     	ss >> valname;
     	vectorOfColnames(i)=valname;
-    }
+  }
     
     
-  /*clear rownames and valname string*/
+  /*clear Colnames and valname string*/
   valname.clear();
   getColNames.clear();
  
-
+  
+  /*get dimension row,size of gene catalogue and fill directly matrice*/
+  std::vector<std::vector<double> > vectorOfval;
+  
+  while(!infile.eof()){
+    std::getline(infile,data);
+    std::istringstream ss(data);
+    std::string::size_type sz; 
+    ss >> valname;
+    vectorOfRownames.push_back(valname);
+    // on ajoute un nouveau vecteur de double pour la ligne en cours
+    vectorOfval.push_back(std::vector<double>(nCol-1));
+    //ss.flush();
+    for(int i = 1 ;i < nCol ; i ++){
+         ss >> val;
+         // on affecte la valeur de la colonne en cours (i-1)
+         vectorOfval.back().at(i-1) = val;
+         //ss.flush();
+    }
+    //nRow++;
+  }
+  //if(header){nRow--;}
+  printf("v[3][8]: %.20lf\n",vectorOfval[3][8]); 
+  Rcout<<"v[3][8]: "<<vectorOfval[3][8]<<endl;
+  
   /*we need get data inside file */
   
   infile.close();
   
-  //Rcpp::Rcout<<"Time taken to read file :";
+  Rcpp::Rcout<<"Time taken to read file :";
   double timeread;
   timeread=(double(std::clock() - tStart)/(CLOCKS_PER_SEC));
- // Rcpp::Rcout<<timeread;
+  Rcpp::Rcout<<timeread;
   data.clear();
   return wrap(timeread);
 }
 
+/*Partie du code en R */
+
 
 /*** R
-timereadfile("ms_vs_topaste.tsv",TRUE)
+timereadfile("head11_ms_vs_topaste.tsv",TRUE)
 */
+
